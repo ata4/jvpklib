@@ -48,8 +48,9 @@ public class Extract {
                     entryDir.mkdirs();
                 }
                 
-                try {
-                    FileChannel fc = FileUtils.openOutputStream(entryFile).getChannel();
+                try (
+                    FileChannel fc = FileUtils.openOutputStream(entryFile).getChannel()
+                ) { 
                     fc.write(entry.getData());
                 } catch (IOException ex) {
                     System.err.println("Can't write " + entry.getPath() + ": " + ex.getMessage());
