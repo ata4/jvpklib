@@ -6,7 +6,7 @@ Write support also should be possible, but I won't implement it until I fully un
 
 It supports both VPK v1 and v2. The old headerless VPK format as well as the "Vampire: The Masquerade - Bloodlines" VPK format, on the other hand, isn't supported.
 
-It is writen for Java 6 and uses NIO buffers and memory mapping for good I/O performance.
+It is writen for Java 7 and uses NIO buffers and memory mapping for good I/O performance.
 
 Dependencies
 ------------
