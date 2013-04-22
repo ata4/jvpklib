@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ public class VPKArchive {
     private Map<String, List<VPKEntry>> dirEntries = new HashMap<>();
     private Map<String, VPKEntry> pathEntries = new HashMap<>();
     private int version = 1;
+    private boolean multiChunk;
     
     /**
      * Loads all entries from a VPK archive file.
@@ -50,10 +52,10 @@ public class VPKArchive {
         String vpkName = FilenameUtils.getBaseName(file.getName());
         
         // it must be a multichunk VPK if it ends with _dir
-        boolean mc = vpkName.endsWith("_dir");
+        multiChunk = vpkName.endsWith("_dir");
         
         // strip "_dir"
-        if (mc) {
+        if (multiChunk) {
             vpkName = vpkName.substring(0, vpkName.length() - 4);
         }
         
@@ -115,7 +117,7 @@ public class VPKArchive {
                 for (String name; !(name = getString(bb)).isEmpty();) {
                     long crc32 = getUInt(bb);
                     byte[] preload = new byte[getUShort(bb)];
-                    int archiveIndex = getUShort(bb);
+                    int chunkIndex = getUShort(bb);
                     int offset = bb.getInt();
                     int size = bb.getInt();
 
@@ -131,8 +133,8 @@ public class VPKArchive {
                     
                     File entryFile;
                     
-                    if (mc) {
-                        String entryName = String.format("%s_%03d.vpk", vpkName, archiveIndex);
+                    if (multiChunk) {
+                        String entryName = String.format("%s_%03d.vpk", vpkName, chunkIndex);
                         entryFile = new File(baseDir, entryName);
                     } else {
                         entryFile = file;
@@ -175,7 +177,7 @@ public class VPKArchive {
      * @return VPK entry list
      */
     public List<VPKEntry> getEntries() {
-        return entries;
+        return Collections.unmodifiableList(entries);
     }
     
     /**
@@ -186,7 +188,7 @@ public class VPKArchive {
      * @return VPK entry list inside the given directory
      */
     public List<VPKEntry> getEntriesForDir(String dir) {
-        return dirEntries.get(dir);
+        return Collections.unmodifiableList(dirEntries.get(dir));
     }
     
     /**
@@ -197,7 +199,7 @@ public class VPKArchive {
      * @return VPK entry list of the given type
      */
     public List<VPKEntry> getEntriesForType(String type) {
-        return typeEntries.get(type);
+        return Collections.unmodifiableList(typeEntries.get(type));
     }
     
     /**
@@ -233,6 +235,24 @@ public class VPKArchive {
         }
         
         this.version = version;
+    }
+    
+    /**
+     * Returns true if this archive is split up into multiple chunk files.
+     * 
+     * @return true if this is a multi-chunk archive
+     */
+    public boolean isMultiChunk() {
+        return multiChunk;
+    }
+    
+    /**
+     * Sets if this archive should split up into multiple chunk files.
+     * 
+     * @param multiChunk multi-chunk flag
+     */
+    public void setMultiChunk(boolean multiChunk) {
+        this.multiChunk = multiChunk;
     }
     
     /**

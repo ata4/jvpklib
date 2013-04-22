@@ -17,7 +17,8 @@ import java.nio.channels.FileChannel;
 import org.apache.commons.io.FileUtils;
 
 /**
- *
+ * Example: extract all entries in a VPK archive.
+ * 
  * @author Nico Bergemann <barracuda415 at yahoo.de>
  */
 public class Extract {
@@ -29,6 +30,8 @@ public class Extract {
         for (String arg : args) {
             File file = new File(arg);
             VPKArchive vpk = new VPKArchive();
+            
+            System.out.println(file);
             
             try {
                 vpk.load(file);

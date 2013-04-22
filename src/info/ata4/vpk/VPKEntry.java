@@ -41,6 +41,15 @@ public class VPKEntry {
     }
     
     /**
+     * Returns the VPK archive file for this entry.
+     * 
+     * @return VPK archive file
+     */
+    public File getFile() {
+        return vpkFile;
+    }
+    
+    /**
      * Creates and returs a byte buffer for this entry.
      * 
      * @return byte buffer containing the data of this entry
@@ -63,13 +72,17 @@ public class VPKEntry {
             return ByteBuffer.wrap(preload);
         }
         
-        if (size > 0 && preload.length > 0) {
+        if (size == 0 && preload.length > 0) {
+            // data is fully preloaded, simply wrap the array
+            bb = ByteBuffer.wrap(preload);
+        } else if (size > 0 && preload.length > 0) {
             // concat preloaded and external data
-            bb = ByteBuffer.allocateDirect(preload.length + size);
+            bb = ByteBuffer.allocateDirect(getDataSize());
             bb.put(preload);
             NIOFileUtils.load(vpkFile, offset, size, bb);
         } else if (readOnly) {
             if (vpkFile.exists()) {
+                // map the file directly
                 bb = NIOFileUtils.openReadOnly(vpkFile, offset, size);
             } else {
                 // can't create files in read-only mode
@@ -261,7 +274,7 @@ public class VPKEntry {
     }
 
     /**
-     * Returns the data size for this entry.
+     * Returns the external archive data size for this entry.
      * 
      * @return data size
      */
@@ -270,12 +283,22 @@ public class VPKEntry {
     }
 
     /**
-     * Sets the new data size for this entry.
+     * Sets the new external archive data size for this entry.
      * 
      * @param size new data size
      */
     void setSize(int size) {
         this.size = size;
+    }
+    
+    /**
+     * Returns the full data size for this entry. It includes the size of the
+     * preloaded data and the archive data.
+     * 
+     * @return full data size
+     */
+    public int getDataSize() {
+        return size + preload.length;
     }
     
     /**

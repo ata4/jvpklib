@@ -12,14 +12,13 @@ package info.ata4.vpk.examples;
 import info.ata4.vpk.VPKArchive;
 import info.ata4.vpk.VPKEntry;
 import java.io.File;
-import java.io.IOException;
 
 /**
- * Example: validate the CRC32 checksums of all entries in a VPK archive.
+ * Example: list all entries in a VPK archive.
  * 
  * @author Nico Bergemann <barracuda415 at yahoo.de>
  */
-public class Validate {
+public class List {
 
     /**
      * @param args the command line arguments
@@ -37,22 +36,13 @@ public class Validate {
                 System.err.println("Can't open archive: " + ex.getMessage());
                 return;
             }
-
-            int failed = 0;
-
+            
             for (VPKEntry entry : vpk.getEntries()) {
-                try {
-                    entry.checkData();
-                } catch (IOException ex) {
-                    System.err.println(entry.getPath() + " failed! " + ex.getMessage());
-                    failed++;
+                if (vpk.isMultiChunk()) {
+                    System.out.printf("%s:%s\n", entry.getFile().getName(), entry.getPath());
+                } else {
+                    System.out.println(entry.getPath());
                 }
-            }
-
-            if (failed == 0) {
-                System.out.println("All files validated successfully");
-            } else {
-                System.out.println(failed + " files failed validation");
             }
         }
     }
