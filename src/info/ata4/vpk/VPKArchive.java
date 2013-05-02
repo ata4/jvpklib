@@ -188,7 +188,8 @@ public class VPKArchive {
      * @return VPK entry list inside the given directory
      */
     public List<VPKEntry> getEntriesForDir(String dir) {
-        return Collections.unmodifiableList(dirEntries.get(dir));
+        List<VPKEntry> result = dirEntries.get(dir);
+        return result == null ? result : Collections.unmodifiableList(result);
     }
     
     /**
@@ -199,7 +200,8 @@ public class VPKArchive {
      * @return VPK entry list of the given type
      */
     public List<VPKEntry> getEntriesForType(String type) {
-        return Collections.unmodifiableList(typeEntries.get(type));
+        List<VPKEntry> result = typeEntries.get(type);
+        return result == null ? result : Collections.unmodifiableList(result);
     }
     
     /**
