@@ -9,6 +9,7 @@
  */
 package info.ata4.vpk;
 
+import info.ata4.util.io.ByteBufferIO;
 import info.ata4.util.io.NIOFileUtils;
 import java.io.File;
 import java.io.IOException;
@@ -61,14 +62,15 @@ public class VPKArchive {
         
         ByteBuffer bb = NIOFileUtils.openReadOnly(file);
         bb.order(ByteOrder.LITTLE_ENDIAN);
+        ByteBufferIO io = new ByteBufferIO(bb);
 
-        int sig = bb.getInt();
+        int sig = io.readInt();
         
         if (sig != SIGNATURE) {
             throw new VPKException(String.format("Unknown signature: 0x%06x (expected: 0x%06x)", sig, SIGNATURE));
         }
         
-        version = bb.getInt();
+        version = io.readInt();
         int headerSize;
 
         switch (version) {
@@ -78,10 +80,10 @@ public class VPKArchive {
             case 2:
                 headerSize = 28;
                 // TODO: unknown fields
-                int v1 = bb.getInt();
-                int v2 = bb.getInt();
-                int v3 = bb.getInt();
-                int v4 = bb.getInt();
+                int v1 = io.readInt(); // footer offset
+                int v2 = io.readInt(); // always 0?
+                int v3 = io.readInt(); // footer size?
+                int v4 = io.readInt(); // always 48?
 //                System.out.printf("%d %d %d %d\n", v1, v2, v3, v4);
                 break;
             default:
@@ -89,14 +91,14 @@ public class VPKArchive {
         }
         
         // dictionary size in v1 (something else in v2?)
-        int dictSize = bb.getInt();
-        
-        for (String type; !(type = getString(bb)).isEmpty();) {
+        int dictSize = io.readInt();
+
+        for (String type; !(type = io.readString()).isEmpty();) {
             if (!typeEntries.containsKey(type)) {
                 typeEntries.put(type, new ArrayList<VPKEntry>());
             }
             
-            for (String dir; !(dir = getString(bb)).isEmpty();) {
+            for (String dir; !(dir = io.readString()).isEmpty();) {
                 // separator should always be "/"
                 dir = dir.replace('\\', '/');
                 
@@ -114,21 +116,21 @@ public class VPKArchive {
                     dirEntries.put(dir, new ArrayList<VPKEntry>());
                 }
                 
-                for (String name; !(name = getString(bb)).isEmpty();) {
-                    long crc32 = getUInt(bb);
-                    byte[] preload = new byte[getUShort(bb)];
-                    int chunkIndex = getUShort(bb);
-                    int offset = bb.getInt();
-                    int size = bb.getInt();
+                for (String name; !(name = io.readString()).isEmpty();) {
+                    long crc32 = io.readUnsignedInt();
+                    byte[] preload = new byte[io.readUnsignedShort()];
+                    int chunkIndex = io.readUnsignedShort();
+                    int offset = io.readInt();
+                    int size = io.readInt();
 
-                    int term = getUShort(bb);
+                    int term = io.readUnsignedShort();
 
                     if (term != 0xffff) {
                         throw new VPKException("Unexpected terminator: " + term);
                     }
 
                     if (preload.length > 0) {
-                        bb.get(preload);
+                        io.readFully(preload);
                     }
                     
                     File entryFile;
@@ -164,7 +166,7 @@ public class VPKArchive {
         
         // check the current position
         if (version == 1) {
-            long dictSizeActual = bb.position() - headerSize;
+            long dictSizeActual = io.position() - headerSize;
             if (dictSize != 0 && dictSizeActual != dictSize) {
                 throw new VPKException(String.format("Incorrect dictionary size %d (expected %d)", dictSizeActual, dictSize));
             }
@@ -265,21 +267,5 @@ public class VPKArchive {
         dirEntries.clear();
         typeEntries.clear();
         pathEntries.clear();
-    }
-
-    private long getUInt(ByteBuffer bb) {
-        return bb.getInt() & 0xffffffffl;
-    }
-
-    private int getUShort(ByteBuffer bb) {
-        return bb.getShort() & 0xffff;
-    }
-    
-    private String getString(ByteBuffer bb) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        for (byte chr; bb.hasRemaining() && (chr = bb.get()) != 0;) {
-            sb.append((char) chr);
-        }
-        return sb.toString();
     }
 }
