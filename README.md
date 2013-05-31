@@ -11,4 +11,4 @@ It is writen for Java 7 and uses NIO buffers and memory mapping for good I/O per
 Dependencies
 ------------
 
-* [apache-commons-io-2.0.1](http://commons.apache.org/io/)
+* [apache-commons-io-2.4](http://commons.apache.org/io/)
