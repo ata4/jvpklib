@@ -1,4 +1,4 @@
-jvpk
+jvpklib
 =======
 
 This is a simple Java library to read Valve's VPK archive files.
