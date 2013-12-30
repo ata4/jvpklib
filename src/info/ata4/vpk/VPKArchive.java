@@ -9,9 +9,9 @@
  */
 package info.ata4.vpk;
 
-import info.ata4.io.DataInputReader;
 import info.ata4.util.io.ByteBufferInput;
-import info.ata4.util.io.NIOFileUtils;
+import info.ata4.util.io.ByteBufferUtils;
+import info.ata4.util.io.DataInputReader;
 import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
@@ -62,7 +62,7 @@ public class VPKArchive {
             vpkName = vpkName.substring(0, vpkName.length() - 4);
         }
         
-        ByteBuffer bb = NIOFileUtils.openReadOnly(file);
+        ByteBuffer bb = ByteBufferUtils.openReadOnly(file.toPath());
         bb.order(ByteOrder.LITTLE_ENDIAN);
         DataInput di1 = new ByteBufferInput(bb);
         DataInputReader di2 = new DataInputReader(di1);
@@ -112,7 +112,7 @@ public class VPKArchive {
                 
                 // add missing slash unless it's the root dir
                 if (!dir.isEmpty() && !dir.endsWith("/")) {
-                    dir = dir + "/";
+                    dir += "/";
                 }
                 
                 if (!dirEntries.containsKey(dir)) {
