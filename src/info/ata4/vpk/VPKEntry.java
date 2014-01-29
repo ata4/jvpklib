@@ -9,7 +9,7 @@
  */
 package info.ata4.vpk;
 
-import info.ata4.util.io.NIOFileUtils;
+import info.ata4.io.util.ByteBufferUtils;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -79,17 +79,17 @@ public class VPKEntry {
             // concat preloaded and external data
             bb = ByteBuffer.allocateDirect(getDataSize());
             bb.put(preload);
-            NIOFileUtils.load(vpkFile, offset, size, bb);
+            ByteBufferUtils.load(vpkFile.toPath(), offset, size, bb);
         } else if (readOnly) {
             if (vpkFile.exists()) {
                 // map the file directly
-                bb = NIOFileUtils.openReadOnly(vpkFile, offset, size);
+                bb = ByteBufferUtils.openReadOnly(vpkFile.toPath(), offset, size);
             } else {
                 // can't create files in read-only mode
                 throw new FileNotFoundException();
             }
         } else {
-            bb = NIOFileUtils.openReadWrite(vpkFile, offset, size);
+            bb = ByteBufferUtils.openReadWrite(vpkFile.toPath(), offset, size);
         }
         
         bb.order(ByteOrder.LITTLE_ENDIAN);

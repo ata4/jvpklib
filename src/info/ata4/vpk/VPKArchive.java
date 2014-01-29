@@ -9,9 +9,9 @@
  */
 package info.ata4.vpk;
 
-import info.ata4.util.io.ByteBufferInput;
-import info.ata4.util.io.ByteBufferUtils;
-import info.ata4.util.io.DataInputReader;
+import info.ata4.io.ByteBufferInput;
+import info.ata4.io.DataInputReader;
+import info.ata4.io.util.ByteBufferUtils;
 import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
