@@ -9,14 +9,10 @@
  */
 package info.ata4.vpk;
 
-import info.ata4.io.ByteBufferInput;
 import info.ata4.io.DataInputReader;
 import info.ata4.io.util.ByteBufferUtils;
-import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -62,18 +58,16 @@ public class VPKArchive {
             vpkName = vpkName.substring(0, vpkName.length() - 4);
         }
         
-        ByteBuffer bb = ByteBufferUtils.openReadOnly(file.toPath());
-        bb.order(ByteOrder.LITTLE_ENDIAN);
-        DataInput di1 = new ByteBufferInput(bb);
-        DataInputReader di2 = new DataInputReader(di1);
+        DataInputReader in = DataInputReader.newReader(ByteBufferUtils.openReadOnly(file.toPath()));
+        in.setSwap(true);
 
-        int sig = di1.readInt();
+        int sig = in.readInt();
         
         if (sig != SIGNATURE) {
             throw new VPKException(String.format("Unknown signature: 0x%06x (expected: 0x%06x)", sig, SIGNATURE));
         }
         
-        version = di1.readInt();
+        version = in.readInt();
         int headerSize;
 
         switch (version) {
@@ -83,10 +77,10 @@ public class VPKArchive {
             case 2:
                 headerSize = 28;
                 // TODO: unknown fields
-                int v1 = di1.readInt(); // footer offset
-                int v2 = di1.readInt(); // always 0?
-                int v3 = di1.readInt(); // footer size?
-                int v4 = di1.readInt(); // always 48?
+                int v1 = in.readInt(); // footer offset
+                int v2 = in.readInt(); // always 0?
+                int v3 = in.readInt(); // footer size?
+                int v4 = in.readInt(); // always 48?
 //                System.out.printf("%d %d %d %d\n", v1, v2, v3, v4);
                 break;
             default:
@@ -94,14 +88,14 @@ public class VPKArchive {
         }
         
         // dictionary size in v1 (something else in v2?)
-        int dictSize = di1.readInt();
+        int dictSize = in.readInt();
 
-        for (String type; !(type = di2.readStringNull(1024)).isEmpty();) {
+        for (String type; !(type = in.readStringNull(1024)).isEmpty();) {
             if (!typeEntries.containsKey(type)) {
                 typeEntries.put(type, new ArrayList<VPKEntry>());
             }
             
-            for (String dir; !(dir = di2.readStringNull(1024)).isEmpty();) {
+            for (String dir; !(dir = in.readStringNull(1024)).isEmpty();) {
                 // separator should always be "/"
                 dir = dir.replace('\\', '/');
                 
@@ -119,21 +113,22 @@ public class VPKArchive {
                     dirEntries.put(dir, new ArrayList<VPKEntry>());
                 }
                 
-                for (String name; !(name = di2.readStringNull(1024)).isEmpty();) {
-                    long crc32 = di2.readUnsignedInt();
-                    byte[] preload = new byte[di1.readUnsignedShort()];
-                    int chunkIndex = di1.readUnsignedShort();
-                    int offset = di1.readInt();
-                    int size = di1.readInt();
+                for (String name; !(name = in.readStringNull(1024)).isEmpty();) {
+                    long crc32 = in.readUnsignedInt();
+                    int preloadSize = in.readUnsignedShort();
+                    byte[] preload = new byte[preloadSize];
+                    int chunkIndex = in.readUnsignedShort();
+                    int offset = in.readInt();
+                    int size = in.readInt();
 
-                    int term = di1.readUnsignedShort();
+                    int term = in.readUnsignedShort();
 
                     if (term != 0xffff) {
                         throw new VPKException("Unexpected terminator: " + term);
                     }
 
                     if (preload.length > 0) {
-                        di1.readFully(preload);
+                        in.readFully(preload);
                     }
                     
                     File entryFile;
@@ -169,7 +164,7 @@ public class VPKArchive {
         
         // check the current position
         if (version == 1) {
-            long dictSizeActual = bb.position() - headerSize;
+            long dictSizeActual = in.position() - headerSize;
             if (dictSize != 0 && dictSizeActual != dictSize) {
                 throw new VPKException(String.format("Incorrect dictionary size %d (expected %d)", dictSizeActual, dictSize));
             }
